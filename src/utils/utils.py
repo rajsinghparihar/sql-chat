@@ -100,3 +100,4 @@ class DatabaseUtils:
             schema_str += "\n"
 
         return schema_str
+    

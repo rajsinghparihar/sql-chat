@@ -69,7 +69,7 @@ class BaseAPI:
                 break
 
         if result.__contains__("sqlite_error"):
-            return f"Couldn't process query: Error: {result['sqlite_error']}", {}
+            return {"result": [result]}
 
         result_dict = result.to_dict(orient="records")
         result = result.head(10)  # works even if result had < 10 rows
@@ -94,7 +94,7 @@ class BaseAPI:
 
 
 class InsightsAPI(BaseAPI):
-    def __init__(self, n_ques: Optional[int] = 3, automatic: Optional[bool] = True):
+    def __init__(self, n_ques: Optional[int] = 3, automatic: Optional[bool] = False):
         super().__init__()
         self.automatic = automatic
         self.n_ques = n_ques

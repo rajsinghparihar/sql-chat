@@ -1,0 +1,9 @@
+Flask==3.0.2
+llama_index==0.9.47
+pandas==2.2.0
+SQLAlchemy==2.0.25
+transformers==4.37.2
+llama_cpp_python==0.2.27
+torch==2.2.0
+torchaudio==2.2.0
+torchvision==0.17.0

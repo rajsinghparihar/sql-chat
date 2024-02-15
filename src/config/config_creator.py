@@ -289,14 +289,14 @@ Now please fixup old SQL and generate new SQL again.
             "q2": "What is the average price segment for each product family across all regions?",
             "q3": "Which distribution center has the highest total gross sales value?",
             "q4": "What is the trend of monthly gross sales values for the product family WIRELESS PHONE in the TG region?",
-            "q5": "What is the trend of monthly net sales values for a product family GSM HANDSETS IOS in the DEL region?",
+            "q5": "What is the trend of monthly net sales values for a product family GSM HANDSETS IOS in the DEL region?"
         },
         "approach": {
             "q1": "Use the SUM function on the Gross_sale column to get the total gross sales value of all products and GROUP BY clause to group by the STATE column.",
             "q2": "Use the AVG function on the price_segment column grouped by the level3 and level5 columns to get the average price segment for each product family across all regions.",
             "q3": "Use the MAX function on the Gross_sale column where the distribution center matches the desired criteria.",
             "q4": "Use the SUM function on the Gross_sale column grouped by the billing_date_month and level3 columns to get the monthly gross sales values for a specific product family in the TG region. Then, analyze these values over time to see the trend.",
-            "q5": "Use the SUM function on the NSWT column grouped by the billing_date_month, level3, and level5 columns to get the monthly net sales values for a specific product family in a specific region. Then, analyze these values over time to see the trend.",
+            "q5": "Use the SUM function on the NSWT column grouped by the billing_date_month, level3, and level5 columns to get the monthly net sales values for a specific product family in a specific region. Then, analyze these values over time to see the trend."
         }
     }
 }""",

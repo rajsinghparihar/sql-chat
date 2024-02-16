@@ -99,6 +99,22 @@ Generate questions for getting useful insights from the database schema.""",
 
         config.set(
             "prompt_templates",
+            "detail_template",
+            """
+Given a [Database schema] description, a knowledge [Evidence] and the [Question], you need to use valid SQLite and understand the database and knowledge, and then perform text-to-SQL generation.
+[Database schema]
+{schema_str}
+[Foreign keys]
+{fk_str}
+[Question]
+{query}
+[Evidence]
+{evidence}
+""",
+        )
+
+        config.set(
+            "prompt_templates",
             "decomposer_template",
             """Given a [Database schema] description, a knowledge [Evidence] and the [Question], you need to use valid SQLite and understand the database and knowledge, and then decompose the question into subquestions for text-to-SQL generation.
 When generating SQL, we should always consider constraints:

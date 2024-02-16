@@ -43,9 +43,9 @@ class IndexCreator:
         self.build_object_index()
         query_engine = SQLTableRetrieverQueryEngine(
             self._sql_database,
-            self._object_index.as_retriever(similarity_top_k=3),
+            self._object_index.as_retriever(similarity_top_k=3, verbose=False),
             sql_only=True,
-            verbose=False,
+            synthesize_response=False,
         )
 
         return query_engine

@@ -2,6 +2,7 @@
 from src.index.index_creator import IndexCreator
 from src.config.config_loader import ConfigLoader
 from src.utils.utils import DatabaseUtils
+from llama_index.schema import QueryBundle
 import json
 from typing import Optional
 
@@ -45,7 +46,7 @@ class BaseAPI:
 
     def get_user_question_response(self, user_question, evidence=""):
         result = None
-        sql_query = self.get_sql_query(user_question=user_question)
+        sql_query = self.get_sql_query(user_question=user_question, evidence=evidence)
         for _ in range(self.max_tries):
             result = self.get_sql_result(sql_query=sql_query)
             if result.__contains__("sqlite_error"):
@@ -93,11 +94,67 @@ class BaseAPI:
         return final_response
 
 
-class InsightsAPI(BaseAPI):
-    def __init__(self, n_ques: Optional[int] = 3, automatic: Optional[bool] = False):
+class FastBaseAPI(BaseAPI):
+    def __init__(self):
+        super().__init__()
+
+    def get_sql_query_fast(self, user_question, evidence=""):
+        prompt = self._prompt_templates["detail_template"].format(
+            schema_str=self._schema_str,
+            fk_str=self._fk_str,
+            query=user_question,
+            evidence=evidence,
+        )
+        query_bundle = QueryBundle(prompt)
+        _, metadata = self._query_engine._sql_retriever.retrieve_with_metadata(
+            query_bundle
+        )
+        sql_query = str(metadata["sql_query"]).split("sql")[-1].split("```")[0]
+
+        return sql_query
+
+    def get_user_question_response_fast(self, user_question, evidence=""):
+        sql_query = self.get_sql_query_fast(
+            user_question=user_question, evidence=evidence
+        )
+        result = self.get_sql_result(sql_query=sql_query)
+
+        if result.__contains__("sqlite_error"):
+            return {"result": [result]}
+
+        result_dict = result.to_dict(orient="records")
+        result = result.head(10)  # works even if result had < 10 rows
+        result_sample = result.to_json(orient="values")
+        print(result_dict, result_sample)
+
+        string_response = self.get_llm_response(
+            user_question=user_question, result=result_sample
+        )
+
+        final_response = {
+            "result": [
+                {
+                    "output_type": "string",
+                    "output_data": string_response,
+                },
+                {"output_type": "json", "output_data": result_dict},
+            ]
+        }
+
+        return final_response
+
+
+class InsightsAPI(FastBaseAPI):
+    def __init__(
+        self,
+        n_ques: Optional[int] = 3,
+        automatic: Optional[bool] = False,
+        fast: Optional[bool] = True,
+    ):
         super().__init__()
         self.automatic = automatic
         self.n_ques = n_ques
+        self.fast = fast
         if not self.automatic:
             self._template_questions = ConfigLoader().load_questions_config()
 
@@ -123,8 +180,14 @@ class InsightsAPI(BaseAPI):
         response_list = []
         questions, approaches = self.get_insight_questions()
         for question, approach in zip(questions.values(), approaches.values()):
-            response = self.get_user_question_response(
-                user_question=question, evidence=approach
-            )
+            if self.fast:
+                response = self.get_user_question_response_fast(
+                    user_question=question, evidence=approach
+                )
+            else:
+                response = self.get_user_question_response(
+                    user_question=question, evidence=approach
+                )
             response_list.append(response)
-        return response_list
+        response_dict = {"result": response_list}
+        return response_dict

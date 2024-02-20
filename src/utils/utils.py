@@ -2,6 +2,67 @@ import pandas as pd
 from sqlalchemy import text
 from src.index.index_creator import IndexCreator
 from src.config.config_loader import ConfigLoader
+import logging
+
+
+class MyFilter(object):
+    def __init__(self, level):
+        self.__level = level
+
+    def filter(self, logRecord):
+        return logRecord.levelno <= self.__level
+
+
+class Logger:
+    SUCCESS = 60
+
+    def __init__(self):
+        _paths = ConfigLoader().load_path_config()
+        _error_logfile_path = _paths["error_logfile_path"]
+        _general_logfile_path = _paths["general_logfile_path"]
+        _success_logfile_path = _paths["success_logfile_path"]
+
+        logging.getLogger().handlers.clear()
+
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+        )
+
+        logging.addLevelName(self.SUCCESS, "SUCCESS")
+
+        general_logs_handler = logging.FileHandler(filename=_general_logfile_path)
+        general_logs_handler.setLevel(logging.INFO)
+
+        error_logs_handler = logging.FileHandler(filename=_error_logfile_path)
+        error_logs_handler.setLevel(logging.ERROR)
+
+        success_logs_handler = logging.FileHandler(filename=_success_logfile_path)
+        success_logs_handler.setLevel(logging.getLevelName("SUCCESS"))
+
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
+        general_logs_handler.addFilter(MyFilter(logging.INFO))
+        error_logs_handler.addFilter(MyFilter(logging.ERROR))
+        success_logs_handler.addFilter(MyFilter(logging.getLevelName("SUCCESS")))
+
+        general_logs_handler.setFormatter(formatter)
+        error_logs_handler.setFormatter(formatter)
+        success_logs_handler.setFormatter(formatter)
+
+        # Get the logger and add handlers
+        logging.root.addHandler(general_logs_handler)
+        logging.root.addHandler(error_logs_handler)
+        logging.root.addHandler(success_logs_handler)
+
+    def success(self, msg):
+        logging.log(logging.getLevelName("SUCCESS"), msg)
+
+    def error(self, msg):
+        logging.error(msg)
+
+    def info(self, msg):
+        logging.info(msg)
 
 
 class DatabaseUtils:
@@ -100,4 +161,3 @@ class DatabaseUtils:
             schema_str += "\n"
 
         return schema_str
-    

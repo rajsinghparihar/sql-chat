@@ -1,12 +1,10 @@
 from flask import Flask, request
 from src.service_context.create_service_context import ServiceContextCreator
-from api.api import BaseAPI, InsightsAPI, FastBaseAPI
+from api.api import InsightsAPI
 
 app = Flask(__name__)
 ServiceContextCreator().set_service_context()
-_base_api = BaseAPI()
 _insights_api = InsightsAPI()
-_fast_base_api = FastBaseAPI()
 
 
 @app.route("/")
@@ -18,7 +16,7 @@ def home():
 def user_qna():
     post_data = request.get_json()
     user_question = post_data.get("user_question", "")
-    response = _base_api.get_user_question_response(user_question=user_question)
+    response = _insights_api.get_user_question_response(user_question=user_question)
     return response
 
 
@@ -33,11 +31,11 @@ def user_qna_fast():
     post_data = request.get_json()
     user_question = post_data.get("user_question", "")
     print(user_question)
-    response = _fast_base_api.get_user_question_response_fast(
+    response = _insights_api.get_user_question_response_fast(
         user_question=user_question
     )
     return response
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(debug=True)

@@ -1,7 +1,7 @@
 # api.py
 from src.index.index_creator import IndexCreator
 from src.config.config_loader import ConfigLoader
-from src.utils.utils import DatabaseUtils
+from src.utils.utils import DatabaseUtils, Logger
 from llama_index.schema import QueryBundle
 import json
 from typing import Optional
@@ -16,6 +16,7 @@ class BaseAPI:
         self._schema_str = self._database_utils_instance.get_schema_str()
         self._fk_str = self._database_utils_instance.get_fk_str()
         self.max_tries = 2
+        self.logger_instance = Logger()
 
     def get_llm_response(self, user_question, result):
         prompt = self._prompt_templates["human_like_response_template"].format(
@@ -70,12 +71,17 @@ class BaseAPI:
                 break
 
         if result.__contains__("sqlite_error"):
-            return {"result": [result]}
+            log_msg = f"user_question: {user_question} - sql_query: {sql_query} - error: {result}"
+            self.logger_instance.error(log_msg)
+            return {
+                "result": [
+                    {"output_type": "string", "output_data": "Could not process query."}
+                ]
+            }
 
         result_dict = result.to_dict(orient="records")
         result = result.head(10)  # works even if result had < 10 rows
         result_sample = result.to_json(orient="values")
-        print(result_dict, result_sample)
 
         string_response = self.get_llm_response(
             user_question=user_question, result=result_sample
@@ -90,6 +96,9 @@ class BaseAPI:
                 {"output_type": "json", "output_data": result_dict},
             ]
         }
+
+        log_msg = f"user_question: {user_question} - sql_query: {sql_query} - response: {final_response}"
+        self.logger_instance.success(log_msg)
 
         return final_response
 
@@ -120,12 +129,17 @@ class FastBaseAPI(BaseAPI):
         result = self.get_sql_result(sql_query=sql_query)
 
         if result.__contains__("sqlite_error"):
-            return {"result": [result]}
+            log_msg = f"user_question: {user_question} - sql_query: {sql_query} - error: {result}"
+            self.logger_instance.error(log_msg)
+            return {
+                "result": [
+                    {"output_type": "string", "output_data": "Could not process query."}
+                ]
+            }
 
         result_dict = result.to_dict(orient="records")
         result = result.head(10)  # works even if result had < 10 rows
         result_sample = result.to_json(orient="values")
-        print(result_dict, result_sample)
 
         string_response = self.get_llm_response(
             user_question=user_question, result=result_sample
@@ -140,6 +154,9 @@ class FastBaseAPI(BaseAPI):
                 {"output_type": "json", "output_data": result_dict},
             ]
         }
+
+        log_msg = f"user_question: {user_question} - sql_query: {sql_query} - response: {final_response}"
+        self.logger_instance.success(log_msg)
 
         return final_response
 

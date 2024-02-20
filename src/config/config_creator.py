@@ -23,6 +23,21 @@ class ConfigCreator:
             "column_descriptions_file_path",
             "data/csv/Electronics data dictionary.xlsx",
         )
+        config.set(
+            "paths",
+            "error_logfile_path",
+            "error_logs.log",
+        )
+        config.set(
+            "paths",
+            "general_logfile_path",
+            "general_logs.log",
+        )
+        config.set(
+            "paths",
+            "success_logfile_path",
+            "success_logs.log",
+        )
 
         config.add_section("llm_params")
         config.set(
@@ -49,6 +64,9 @@ class ConfigCreator:
             "human_like_response_template",
             """You are a helpful assistant.
 Your sole task is to generate a human-like response using the provided information.
+Assume that the default currency is INR.
+Do not format numbers with commas.
+Do not assume currency units like crores or lakhs. output the number and the currency.
 Do not use your own knowledge base to generate new information.
 Given the user question:
 {user_question}

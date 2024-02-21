@@ -120,6 +120,10 @@ Generate questions for getting useful insights from the database schema.""",
             "detail_template",
             """
 Given a [Database schema] description, a knowledge [Evidence] and the [Question], you need to use valid SQLite and understand the database and knowledge, and then perform text-to-SQL generation.
+When generating SQL, we should always consider constraints:
+[Constraints]
+- Always LIMIT to 100 records, i.e. LIMIT 100; for each generated SQL query.
+
 [Database schema]
 {schema_str}
 [Foreign keys]
@@ -138,6 +142,7 @@ Given a [Database schema] description, a knowledge [Evidence] and the [Question]
 When generating SQL, we should always consider constraints:
 [Constraints]
 - Use strftime(<date_column>)
+- Always LIMIT to 100 records, i.e. LIMIT 100; for each generated SQL query.
 - In `SELECT <column>`, just select needed columns in the [Question] without any unnecessary column or value
 - In `FROM <table>` or `JOIN <table>`, do not include unnecessary table
 - If use max or min func, `JOIN <table>` FIRST, THEN use `SELECT MAX(<column>)` or `SELECT MIN(<column>)`

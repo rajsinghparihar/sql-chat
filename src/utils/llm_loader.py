@@ -1,4 +1,5 @@
 # llm_loader.py
+import os
 from llama_index.llms import LlamaCPP
 from llama_index.llms.llama_utils import (
     messages_to_prompt,
@@ -31,6 +32,7 @@ class LLMLoader:
             completion_to_prompt=completion_to_prompt,
             model_kwargs={
                 "n_gpu_layers": int(llm_params["n_gpu_layers"]),
+                "n_threads": os.cpu_count() - 2,
                 "repeat-penalty": float(llm_params["repeat_penalty"]),
             },
             verbose=bool(llm_params["verbose_flag"]),

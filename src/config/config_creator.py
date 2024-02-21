@@ -50,7 +50,7 @@ class ConfigCreator:
         config.set("llm_params", "context_window", "7000")
         config.set("llm_params", "temperature", "0")
         config.set("llm_params", "verbose_flag", "False")
-        config.set("llm_params", "n_gpu_layers", "8")
+        config.set("llm_params", "n_gpu_layers", "-1")
         config.set("llm_params", "repeat_penalty", "1.1")
 
         # config.add_section('custom_prompts')

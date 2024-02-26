@@ -1,5 +1,5 @@
 # api.py
-from src.index.index_creator import IndexCreator
+from src.index.index_creator import IndexCreator, FAISSIndex
 from src.config.config_loader import ConfigLoader
 from src.utils.utils import DatabaseUtils, Logger
 from llama_index.schema import QueryBundle
@@ -18,10 +18,17 @@ class BaseAPI:
         self.max_tries = 2
         self.logger_instance = Logger()
 
-    def get_llm_response(self, user_question, result):
-        prompt = self._prompt_templates["human_like_response_template"].format(
-            user_question=user_question, result=result
-        )
+    def get_llm_response(
+        self, user_question, result, summarize: Optional[bool] = False
+    ):
+        if summarize:
+            prompt = self._prompt_templates["summary_template"].format(
+                schema_str=self._schema_str, result=result
+            )
+        else:
+            prompt = self._prompt_templates["human_like_response_template"].format(
+                user_question=user_question, result=result
+            )
         response = self._llm.complete(prompt)
         return str(response)
 
@@ -84,7 +91,7 @@ class BaseAPI:
         result_sample = result.to_json(orient="values")
 
         string_response = self.get_llm_response(
-            user_question=user_question, result=result_sample
+            user_question=user_question, result=result_sample, summarize=True
         )
 
         final_response = {
@@ -124,7 +131,8 @@ class FastBaseAPI(BaseAPI):
 
     def get_user_question_response_fast(self, user_question, evidence=""):
         sql_query = self.get_sql_query_fast(
-            user_question=user_question, evidence=evidence
+            user_question=user_question,
+            evidence=evidence,
         )
         result = self.get_sql_result(sql_query=sql_query)
 
@@ -142,7 +150,7 @@ class FastBaseAPI(BaseAPI):
         result_sample = result.to_json(orient="values")
 
         string_response = self.get_llm_response(
-            user_question=user_question, result=result_sample
+            user_question=user_question, result=result_sample, summarize=True
         )
 
         final_response = {
@@ -208,3 +216,30 @@ class InsightsAPI(FastBaseAPI):
             response_list.append(response)
         response_dict = {"result": response_list}
         return response_dict
+
+
+class NonLLMAPI(BaseAPI, FAISSIndex):
+    def __init__(self):
+        BaseAPI.__init__(self)
+        FAISSIndex.__init__(self)
+
+    def get_user_question_response(self, user_question):
+        sql_query = self.match_question(user_question)
+        result = self.get_sql_result(sql_query)
+        print(sql_query)
+        result_dict = result.to_dict(orient="records")
+        result = result.head(10)  # works even if result had < 10 rows
+
+        response = self.get_llm_response(
+            user_question=user_question, result=result, summarize=True
+        )
+        final_response = {
+            "result": [
+                {
+                    "output_type": "string",
+                    "output_data": response,
+                },
+                {"output_type": "json", "output_data": result_dict},
+            ]
+        }
+        return final_response

@@ -25,6 +25,11 @@ class ConfigCreator:
         )
         config.set(
             "paths",
+            "pre_defined_sql_queries_path",
+            "data/pre_defined_sql_queries.json",
+        )
+        config.set(
+            "paths",
             "error_logfile_path",
             "error_logs.log",
         )
@@ -76,6 +81,16 @@ The following result was generated:
 
 Your task is to generate a human-like response using the question and result above.
 The generated response should be as brief as possible. without any explanations. Just provide Question and the result.""",
+        )
+
+        config.set(
+            "prompt_templates",
+            "summary_template",
+            """Given the information about the database in this format: (column_name, column description, value examples) in [Database Info] {schema_str}, and the [Resultant Data] {result}, analyse the data to identify trends if any and provide a summary of the result in natural language.
+Some additional instructions:
+- Do not print any tables, just a natural language summary response should be sufficient.
+- The generated natural language summary should only include information about the [Resultant Data].
+- Keep the response as brief as possible.""",
         )
 
         config.set(

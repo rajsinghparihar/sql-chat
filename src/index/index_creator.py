@@ -11,6 +11,10 @@ from llama_index.objects import (
     SQLTableSchema,
 )
 from src.config.config_loader import ConfigLoader
+import faiss
+from transformers import AutoTokenizer, AutoModel
+import json
+import torch
 
 
 class IndexCreator:
@@ -49,3 +53,66 @@ class IndexCreator:
         )
 
         return query_engine
+
+
+class FAISSIndex:
+    def __init__(self):
+        config_loader = ConfigLoader()
+        paths = config_loader.load_path_config()
+        embedding_model_path = paths["embedding_model_path"]
+        embedding_tokenizer_path = paths["embedding_model_path"]
+        sql_queries_path = paths["pre_defined_sql_queries_path"]
+        self.tokenizer = AutoTokenizer.from_pretrained(embedding_tokenizer_path)
+        self.embed_model = AutoModel.from_pretrained(embedding_model_path)
+
+        with open(sql_queries_path, mode="rb") as file:
+            content = file.read()
+            sql_queries_json_list = json.loads(content)
+            self.sql_queries_list = []
+            for sql_query_json in sql_queries_json_list:
+                sql_query = sql_query_json.get("query", "")
+                self.sql_queries_list.append(sql_query)
+        print(self.sql_queries_list)
+        self.build_faiss_index()
+
+    def build_faiss_index(self):
+        # Tokenize and obtain embeddings
+        inputs = self.tokenizer(
+            self.sql_queries_list, return_tensors="pt", padding=True, truncation=True
+        )
+        with torch.no_grad():
+            outputs = self.embed_model(**inputs)
+
+        # Extract embeddings from the last layer
+        sentence_embeddings = outputs.last_hidden_state.mean(dim=1).numpy()
+
+        # Assuming vectors from the model with a specific dimensionality
+        d = sentence_embeddings.shape[1]
+
+        # Create FAISS index
+        self.index = faiss.IndexFlatL2(d)
+        self.index.add(sentence_embeddings)
+
+    def match_question(self, question):
+        # data specific string handling
+        question = question.replace("product", "zposdesc").replace("item", "zposdesc")
+        question = question.replace("category", "level3_desc")
+        question = (
+            question.replace("distributor", "DC")
+            .replace("distribution center", "DC")
+            .replace("supplier", "DC")
+        )
+        # Tokenize and obtain embedding for the query
+        query_input = self.tokenizer(
+            question, return_tensors="pt", padding=True, truncation=True
+        )
+        with torch.no_grad():
+            query_output = self.embed_model(**query_input)
+
+        # Extract embedding from the last layer
+        query_embedding = query_output.last_hidden_state.mean(dim=1).numpy()
+
+        # Perform similarity search
+        distances, indices = self.index.search(query_embedding, k=1)
+        print(indices)
+        return self.sql_queries_list[indices[0][0]]

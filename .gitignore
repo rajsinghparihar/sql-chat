@@ -1,3 +1,6 @@
+# macosx stuff
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -70,12 +73,16 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/
+*.bat
+Makefile
 
 # PyBuilder
 .pybuilder/
 target/
 
 # Jupyter Notebook
+notebooks/
 .ipynb_checkpoints
 *.ipynb
 

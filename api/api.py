@@ -243,3 +243,55 @@ class NonLLMAPI(BaseAPI, FAISSIndex):
             ]
         }
         return final_response
+
+
+class SummaryAPI(FastBaseAPI, NonLLMAPI):
+    def __init__(self):
+        FastBaseAPI.__init__(self)
+        NonLLMAPI.__init__(self)
+        self.template_keywords = [
+            "brands",
+            "brand",
+            "distributor",
+            "DC",
+            "distribution center",
+            "products",
+            "items",
+            "SKU",
+            "monthly",
+            "yearly",
+        ]
+
+    def get_summary_questions(self, keywords):
+        questions_generation_template = self._prompt_templates[
+            "summary_questions_generation_template"
+        ]
+        prompt = questions_generation_template.format(
+            schema_str=self._schema_str, keywords=keywords
+        )
+
+        response = self._llm.complete(prompt)
+        response = json.loads(response.text)
+        return response
+
+    def get_summary(self, user_input):
+        response_list = []
+        keywords = user_input.split()
+        filtered_keywords = []
+        for keyword in keywords:
+            if keyword in self.template_keywords:
+                filtered_keywords.append(keyword)
+
+        # no template found for keyword i.e. new keyword -> generate sql
+        if filtered_keywords == []:
+            questions = self.get_summary_questions(keywords=keywords)
+            for question in questions.values():
+                question = list(question.values())
+                response = self.get_user_question_response_fast(*question)
+                response_list.append(response)
+        else:
+            for keyword in filtered_keywords:
+                response = self.get_user_question_response(user_question=keyword)
+                response_list.append(response)
+
+        return {"result": response_list}

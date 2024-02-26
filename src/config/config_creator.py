@@ -95,6 +95,15 @@ Some additional instructions:
 
         config.set(
             "prompt_templates",
+            "summary_questions_generation_template",
+            """You are an experienced data analyst. 
+Given the database information: {schema_str}, and the given keywords: {keywords}, generate at least 2 questions that might be helpful to summarize the data, make sure to generate questions that are generalized and could be used with any column of the table. 
+Generated questions should be in JSON format.
+""",
+        )
+
+        config.set(
+            "prompt_templates",
             "insights_question_generation_template",
             """You are a seasoned data analyst. Imagine you have access to a database.
 Your task is to derive basic insights from the database and generate {n_ques} questions for the same. 

@@ -30,6 +30,11 @@ class ConfigCreator:
         )
         config.set(
             "paths",
+            "pre_defined_qna_template_sql_queries_path",
+            "data/qna_template_sql_queries.json",
+        )
+        config.set(
+            "paths",
             "error_logfile_path",
             "error_logs.log",
         )

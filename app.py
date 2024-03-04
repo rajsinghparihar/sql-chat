@@ -1,12 +1,13 @@
 from flask import Flask, request
 from src.service_context.create_service_context import ServiceContextCreator
-from api.api import InsightsAPI, NonLLMAPI, SummaryAPI
+from api.api import InsightsAPI, NonLLMAPI, SummaryAPI, TemplateBasedQAAPI
 
 app = Flask(__name__)
 ServiceContextCreator().set_service_context()
 _insights_api = InsightsAPI()
 _non_llm_api = NonLLMAPI()
 _summary_api = SummaryAPI()
+_template_api = TemplateBasedQAAPI()
 
 
 @app.route("/")
@@ -73,6 +74,17 @@ def user_qna_non_llm():
     user_question = post_data.get("user_question", "")
     print(user_question)
     response = _non_llm_api.get_user_question_response(user_question=user_question)
+    return response
+
+
+@app.route("/api/template_qna", methods=["POST"])
+def template_qna():
+    post_data = request.get_json()
+    user_inputs = post_data.get("Args")
+    question_num = post_data.get("Question_No")
+    response = _template_api.get_user_question_response(
+        user_inputs=user_inputs, question_num=question_num
+    )
     return response
 
 

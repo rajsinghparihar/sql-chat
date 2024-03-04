@@ -295,3 +295,69 @@ class SummaryAPI(FastBaseAPI, NonLLMAPI):
                 response_list.append(response)
 
         return {"result": response_list}
+
+
+class TemplateBasedQAAPI:
+    def __init__(self):
+        config_loader = ConfigLoader()
+        self._database_utils_instance = DatabaseUtils()
+        self._paths = config_loader.load_path_config()
+        template_sql_config_filepath = self._paths[
+            "pre_defined_qna_template_sql_queries_path"
+        ]
+        with open(template_sql_config_filepath, mode="rb") as file:
+            content = file.read()
+            qna_config = json.loads(content)
+            self.sql_query_templates_map = qna_config.get("sql_queries")
+            self.time_period_map = qna_config.get("time_period_map")
+            self.position_map = qna_config.get("position_map")
+            self.sales_type_map = qna_config.get("sales_type_map")
+            self.state_codes_map = qna_config.get("state_code_map")
+            self.time_frame_map = qna_config.get("time_frame_map")
+
+    def get_user_question_response(self, user_inputs: dict, question_num: int):
+        period = user_inputs.get("period", "")
+        position = user_inputs.get("position", "")
+        sales_type = user_inputs.get("sale_type", "")
+        product_name = user_inputs.get("sku", "")
+        time_frame = user_inputs.get("time_frame", "")
+        state_name = user_inputs.get("state", "")
+        start_date = user_inputs.get("from", "")
+        end_date = user_inputs.get("to", "")
+
+        if question_num == 1:
+            template = self.sql_query_templates_map["avg_sales_template_sql"]
+        elif question_num == 2:
+            template = self.sql_query_templates_map["total_sales_template_sql"]
+        elif question_num == 3:
+            template = self.sql_query_templates_map["growth_rate_template_sql"]
+        else:
+            template = self.sql_query_templates_map["top_products_template_sql"]
+
+        sql_query = template.format(
+            quantity_or_value=self.sales_type_map.get(sales_type, ""),
+            time_period=self.time_period_map.get(period, ""),
+            product_name=product_name,
+            state_code=self.state_codes_map.get(state_name, ""),
+            time_frame=self.time_period_map.get(
+                self.time_frame_map.get(time_frame, "monthly")
+            ),
+            start_date=start_date,
+            end_date=end_date,
+            position=self.position_map.get(position, ""),
+        )
+
+        result = self._database_utils_instance.run_sql_query(sql_query=sql_query)
+        result_data = result.to_dict(orient="records")
+        result = result.head(10)
+
+        final_response = {
+            "result": [
+                {
+                    "output_type": "string",
+                    "output_data": f"Here are the results: \n{result.to_string(index=False)}",
+                },
+                {"output_type": "json", "output_data": result_data},
+            ]
+        }
+        return final_response

@@ -72,7 +72,6 @@ class FAISSIndex:
             for sql_query_json in sql_queries_json_list:
                 sql_query = sql_query_json.get("query", "")
                 self.sql_queries_list.append(sql_query)
-        print(self.sql_queries_list)
         self.build_faiss_index()
 
     def build_faiss_index(self):
@@ -114,5 +113,4 @@ class FAISSIndex:
 
         # Perform similarity search
         distances, indices = self.index.search(query_embedding, k=1)
-        print(indices)
         return self.sql_queries_list[indices[0][0]]

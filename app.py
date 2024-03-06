@@ -68,7 +68,6 @@ def user_qna_fast():
     """
     post_data = request.get_json()
     user_question = post_data.get("user_question", "")
-    print(user_question)
     response = _insights_api.get_user_question_response_fast(
         user_question=user_question
     )
@@ -99,7 +98,6 @@ def template_qna():
 def summary():
     post_data = request.get_json()
     user_question = post_data.get("user_question", "")
-    print(user_question)
     response = _summary_api.get_summary(user_input=user_question)
     return response
 

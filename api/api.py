@@ -246,7 +246,6 @@ class NonLLMAPI(BaseAPI, FAISSIndex):
     def get_user_question_response(self, user_question):
         sql_query = self.match_question(user_question)
         result = self.get_sql_result(sql_query)
-        print(sql_query)
         result_dict = result.to_dict(orient="records")
         result = result.head(10)  # works even if result had < 10 rows
 

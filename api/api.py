@@ -213,8 +213,28 @@ class InsightsAPI(FastBaseAPI):
                 response = self.get_user_question_response(
                     user_question=question, evidence=approach
                 )
-            response_list.append(response)
-        response_dict = {"result": response_list}
+
+            result = response.get("result", [])[1].get("output_data")
+            description = response.get("result", [])[0].get("output_data")
+            present_format = "tile" if len(result) == 1 else "table"
+
+            columns = list(result[0].keys())
+            column_names = [col.replace("_", " ").upper() for col in columns]
+            result_dict = (
+                result[0]
+                if len(result) == 1
+                else {"data": result, "columns": columns, "column_names": column_names}
+            )
+
+            insight_response = {
+                "question": question,
+                "result": result_dict,
+                "output_format": "json",
+                "present_format": present_format,
+                "description": description,
+            }
+            response_list.append(insight_response)
+        response_dict = {"insights": response_list}
         return response_dict
 
 
@@ -340,7 +360,7 @@ class TemplateBasedQAAPI:
             product_name=product_name,
             state_code=self.state_codes_map.get(state_name, ""),
             time_frame=self.time_period_map.get(
-                self.time_frame_map.get(time_frame, "monthly")
+                self.time_frame_map.get(time_frame, "")
             ),
             start_date=start_date,
             end_date=end_date,

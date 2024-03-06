@@ -1,13 +1,20 @@
-from flask import Flask, request
+import json
+from flask import Flask, request, jsonify
 from src.service_context.create_service_context import ServiceContextCreator
-from api.api import InsightsAPI, NonLLMAPI, SummaryAPI, TemplateBasedQAAPI
+from api.api import InsightsAPI, SummaryAPI, TemplateBasedQAAPI
 
 app = Flask(__name__)
 ServiceContextCreator().set_service_context()
 _insights_api = InsightsAPI()
-_non_llm_api = NonLLMAPI()
 _summary_api = SummaryAPI()
 _template_api = TemplateBasedQAAPI()
+
+
+@app.route("/api/static-insights")
+def static_insights():
+    with open("results/sample-insights.json", "r") as f:
+        insights = json.load(f)
+    return jsonify(insights)
 
 
 @app.route("/")
@@ -37,7 +44,7 @@ def user_qna():
     return response
 
 
-@app.route("/api/insights/")
+@app.route("/api/insights")
 def insights():
     """
     Insights Endpoint
@@ -50,7 +57,7 @@ def insights():
     return response_list
 
 
-@app.route("/api/qna_fast", methods=["POST"])
+@app.route("/api/fast-qna", methods=["POST"])
 def user_qna_fast():
     """
     Fast User Q&A Endpoint
@@ -68,16 +75,16 @@ def user_qna_fast():
     return response
 
 
-@app.route("/api/qna_template", methods=["POST"])
-def user_qna_non_llm():
-    post_data = request.get_json()
-    user_question = post_data.get("user_question", "")
-    print(user_question)
-    response = _non_llm_api.get_user_question_response(user_question=user_question)
-    return response
+# @app.route("/api/qna_template", methods=["POST"])
+# def user_qna_non_llm():
+#     post_data = request.get_json()
+#     user_question = post_data.get("user_question", "")
+#     print(user_question)
+#     response = _non_llm_api.get_user_question_response(user_question=user_question)
+#     return response
 
 
-@app.route("/api/template_qna", methods=["POST"])
+@app.route("/api/template-qna", methods=["POST"])
 def template_qna():
     post_data = request.get_json()
     user_inputs = post_data.get("Args")

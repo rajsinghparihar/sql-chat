@@ -273,7 +273,10 @@ class SummaryAPI(FastBaseAPI, NonLLMAPI):
             "brand",
             "distributor",
             "DC",
-            "distribution center",
+            "DCs",
+            "distribution",
+            "center",
+            "distributors",
             "products",
             "items",
             "SKU",
@@ -290,6 +293,7 @@ class SummaryAPI(FastBaseAPI, NonLLMAPI):
         )
 
         response = self._llm.complete(prompt)
+        print(response.text)
         response = json.loads(response.text)
         return response
 
@@ -305,8 +309,7 @@ class SummaryAPI(FastBaseAPI, NonLLMAPI):
         if filtered_keywords == []:
             questions = self.get_summary_questions(keywords=keywords)
             for question in questions.values():
-                question = list(question.values())
-                response = self.get_user_question_response_fast(*question)
+                response = self.get_user_question_response_fast(user_question=question)
                 response_list.append(response)
         else:
             for keyword in filtered_keywords:
@@ -316,8 +319,9 @@ class SummaryAPI(FastBaseAPI, NonLLMAPI):
         return {"result": response_list}
 
 
-class TemplateBasedQAAPI:
+class TemplateBasedQAAPI(BaseAPI):
     def __init__(self):
+        super().__init__()
         config_loader = ConfigLoader()
         self._database_utils_instance = DatabaseUtils()
         self._paths = config_loader.load_path_config()
@@ -334,7 +338,9 @@ class TemplateBasedQAAPI:
             self.state_codes_map = qna_config.get("state_code_map")
             self.time_frame_map = qna_config.get("time_frame_map")
 
-    def get_user_question_response(self, user_inputs: dict, question_num: int):
+    def get_user_question_response(
+        self, user_inputs: dict, question_num: int, fast: Optional[bool] = False
+    ):
         period = user_inputs.get("period", "")
         position = user_inputs.get("position", "")
         sales_type = user_inputs.get("sale_type", "")
@@ -367,14 +373,31 @@ class TemplateBasedQAAPI:
         )
 
         result = self._database_utils_instance.run_sql_query(sql_query=sql_query)
+
+        if result.__contains__("sqlite_error"):
+            log_msg = f"user_question: {user_inputs} - sql_query: {sql_query} - error: {result}"
+            self.logger_instance.error(log_msg)
+            return {
+                "result": [
+                    {"output_type": "string", "output_data": "Could not process query."}
+                ]
+            }
+
         result_data = result.to_dict(orient="records")
         result = result.head(10)
-
+        result_sample = result.to_json(orient="values")
+        result_text = (
+            f"Here are the results: \n{result.to_string(index=False)}"
+            if fast
+            else self.get_llm_response(
+                user_question="", result=result_sample, summarize=True
+            )
+        )
         final_response = {
             "result": [
                 {
                     "output_type": "string",
-                    "output_data": f"Here are the results: \n{result.to_string(index=False)}",
+                    "output_data": result_text,
                 },
                 {"output_type": "json", "output_data": result_data},
             ]

@@ -12,7 +12,7 @@ _template_api = TemplateBasedQAAPI()
 
 @app.route("/api/static-insights")
 def static_insights():
-    with open("results/sample-insights.json", "r") as f:
+    with open("data/sample-insights.json", "r") as f:
         insights = json.load(f)
     return jsonify(insights)
 
@@ -33,9 +33,7 @@ def home():
 def user_qna():
     """
     User Q&A Endpoint
-
     Retrieves a response to a user's question using the InsightsAPI.
-
     :return: JSON response with the answer to the user's question.
     """
     post_data = request.get_json()
@@ -90,6 +88,17 @@ def template_qna():
     question_num = post_data.get("Question_No")
     response = _template_api.get_user_question_response(
         user_inputs=user_inputs, question_num=question_num
+    )
+    return response
+
+
+@app.route("/api/fast-template-qna", methods=["POST"])
+def fast_template_qna():
+    post_data = request.get_json()
+    user_inputs = post_data.get("Args")
+    question_num = post_data.get("Question_No")
+    response = _template_api.get_user_question_response(
+        user_inputs=user_inputs, question_num=question_num, fast=True
     )
     return response
 

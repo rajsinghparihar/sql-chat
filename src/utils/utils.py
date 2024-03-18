@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from sqlalchemy import text
 from src.index.index_creator import IndexCreator
 from src.config.config_loader import ConfigLoader
@@ -161,3 +162,31 @@ class DatabaseUtils:
             schema_str += "\n"
 
         return schema_str
+
+    def format_number_column(self, df, column_name):
+        """
+        Applies comma formatting according to the international numbering system to a specific column in a pandas dataframe.
+        Args:
+            df (pandas.DataFrame): The dataframe containing the column to format.
+            column_name (str): The name of the column containing numeric values.
+        Returns:
+            pandas.DataFrame: The modified dataframe with the formatted column.
+        """
+        values = df[column_name]
+        formatted_values = [f"{val:,}" for val in values]
+        df[column_name] = formatted_values
+        return df
+
+    def format_numeric_columns(self, df):
+        """
+        Applies comma formatting according to the international numbering system to all numerical columns in a pandas dataframe.
+        Args:
+            df (pandas.DataFrame): The dataframe containing numerical columns.
+        Returns:
+            pandas.DataFrame: The modified dataframe with formatted numerical columns.
+        """
+        numeric_cols = df.select_dtypes(include=[np.number])
+        for col in numeric_cols:
+            df = self.format_number_column(df.copy(), col)
+
+        return df

@@ -45,7 +45,7 @@ class BaseAPI:
         # split again on extra back-ticks and take the substring, left of the ```
         # intuition behind taking the last element: since decomposer outputs sql in sub-questions,
         # usually the sql code of the last sub-question is the complete sql code that solves the original question.
-        sql_query = str(response.metadata["sql_query"]).split("sql")[-1].split("```")[0]
+        sql_query = str(response.metadata["sql_query"]).split("sql")[-1].split(";")[0]
 
         return sql_query
 
@@ -72,7 +72,7 @@ class BaseAPI:
                 )
                 response = self._query_engine.query(prompt)
                 sql_query = (
-                    str(response.metadata["sql_query"]).split("sql")[-1].split("```")[0]
+                    str(response.metadata["sql_query"]).split("sql")[-1].split(";")[0]
                 )
             else:
                 break
@@ -86,9 +86,10 @@ class BaseAPI:
                 ]
             }
 
+        result = result.tail(10)  # works even if result had < 10 rows
+        result = self._database_utils_instance.format_numeric_columns(result)
         result_dict = result.to_dict(orient="records")
-        result = result.head(10)  # works even if result had < 10 rows
-        result_sample = result.to_json(orient="values")
+        result_sample = result.to_json(orient="split")
 
         string_response = self.get_llm_response(
             user_question=user_question, result=result_sample, summarize=True
@@ -125,7 +126,8 @@ class FastBaseAPI(BaseAPI):
         _, metadata = self._query_engine._sql_retriever.retrieve_with_metadata(
             query_bundle
         )
-        sql_query = str(metadata["sql_query"]).split("sql")[-1].split("```")[0]
+        sql_query = str(metadata["sql_query"]).split("sql")[-1].split(";")[0]
+        print(sql_query)
 
         return sql_query
 
@@ -145,9 +147,10 @@ class FastBaseAPI(BaseAPI):
                 ]
             }
 
+        result = result.tail(10)  # works even if result had < 10 rows
+        result = self._database_utils_instance.format_numeric_columns(result)
         result_dict = result.to_dict(orient="records")
-        result = result.head(10)  # works even if result had < 10 rows
-        result_sample = result.to_json(orient="values")
+        result_sample = result.to_json(orient="split")
 
         string_response = self.get_llm_response(
             user_question=user_question, result=result_sample, summarize=True
@@ -218,13 +221,20 @@ class InsightsAPI(FastBaseAPI):
             description = response.get("result", [])[0].get("output_data")
             present_format = "tile" if len(result) == 1 else "table"
 
-            columns = list(result[0].keys())
-            column_names = [col.replace("_", " ").upper() for col in columns]
-            result_dict = (
-                result[0]
-                if len(result) == 1
-                else {"data": result, "columns": columns, "column_names": column_names}
-            )
+            if len(result) > 0:
+                columns = list(result[0].keys())
+                column_names = [col.replace("_", " ").upper() for col in columns]
+                result_dict = (
+                    result[0]
+                    if len(result) == 1
+                    else {
+                        "data": result,
+                        "columns": columns,
+                        "column_names": column_names,
+                    }
+                )
+            else:
+                result_dict = {"data": [], "columns": [], "column_names": []}
 
             insight_response = {
                 "question": question,

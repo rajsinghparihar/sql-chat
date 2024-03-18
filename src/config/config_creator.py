@@ -94,6 +94,7 @@ The generated response should be as brief as possible. without any explanations.
             """Given the information about the database in this format: (column_name, column description, value examples) in [Database Info] {schema_str}, and the [Resultant Data] {result}, analyse the data to identify trends if any and provide a summary of the result in natural language.
 Some additional instructions:
 - Do not print any tables, just a natural language summary response should be sufficient.
+- Infer data Type and Unit (e.g. INR, Units etc.) from the [Database Info]. If unit is not given, it is a unitless column.
 - The generated natural language summary should only include information about the [Resultant Data].
 - Keep the response as brief as possible.""",
         )
@@ -358,17 +359,17 @@ Now please fixup old SQL and generate new SQL again.
     "response": {
         "questions": {
             "q1": "What are the top 5 states in order of their total gross sales value of all products?",
-            "q2": "What is the average price segment for each product family across all regions?",
+            "q2": "What is the average price for each product family across all regions?",
             "q3": "Which distribution center has the highest total gross sales value?",
-            "q4": "What is the trend of monthly gross sales values for the product family WIRELESS PHONE in the TG region?",
-            "q5": "What is the trend of monthly net sales values for a product family GSM HANDSETS IOS in the DEL region?"
+            "q4": "What is the monthly gross sales values for the product family WIRELESS PHONE in the TG region?",
+            "q5": "What is the monthly gross sales values for the product brick GSM HANDSETS IOS in the DEL region?"
         },
         "approach": {
             "q1": "Use the SUM function on the Gross_sale column to get the total gross sales value of all products and GROUP BY clause to group by the STATE column.",
-            "q2": "Use the AVG function on the price_segment column grouped by the level3 and level5 columns to get the average price segment for each product family across all regions.",
+            "q2": "Use the AVG function on the RRP column grouped by the level3_desc and level5_desc columns to get the average price for each product family across all regions.",
             "q3": "Use the MAX function on the Gross_sale column where the distribution center matches the desired criteria.",
-            "q4": "Use the SUM function on the Gross_sale column grouped by the billing_date_month and level3 columns to get the monthly gross sales values for a specific product family in the TG region. Then, analyze these values over time to see the trend.",
-            "q5": "Use the SUM function on the NSWT column grouped by the billing_date_month, level3, and level5 columns to get the monthly net sales values for a specific product family in a specific region. Then, analyze these values over time to see the trend."
+            "q4": "Use the SUM function on the Gross_sale column grouped by the billing_date_month and level3_desc columns to get the monthly gross sales values for a specific product family where Region = 'TG'.",
+            "q5": "Use the SUM function on the Gross_sale column grouped by the billing_date_month, level5_desc columns to get the monthly gross sales values for a specific product family where Region = 'DEL'."
         }
     }
 }""",
